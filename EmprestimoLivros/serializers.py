@@ -1,5 +1,8 @@
 from rest_framework import serializers
 from .models import User, Livro, RegistroEmprestimo
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 # (Funcionário)
 class UserSerializer(serializers.ModelSerializer):
@@ -61,3 +64,29 @@ class RegistroEmprestimoCreateSerializer(serializers.ModelSerializer):
         livro.save()
 
         return super().create(validated_data)
+
+
+class RegisterUserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True, min_length=8)
+    department = serializers.CharField(required=True)  
+    email = serializers.EmailField(required=False, allow_blank=True)  
+    first_name = serializers.CharField(required=False, allow_blank=True)  
+    last_name = serializers.CharField(required=False, allow_blank=True) 
+    employee_id = serializers.CharField(required=False, allow_blank=True) 
+
+    class Meta:
+        model = User
+        fields = ['username', 'password', 'email', 'first_name', 'last_name', 'employee_id', 'department']
+        read_only_fields = ['employee_id'] 
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            password=validated_data['password'],
+            department=validated_data['department'],
+            email=validated_data.get('email', ''),
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', ''),
+            employee_id=validated_data.get('employee_id', ''),
+        )
+        return user

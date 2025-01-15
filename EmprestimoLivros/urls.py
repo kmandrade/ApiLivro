@@ -1,4 +1,5 @@
 from django.urls import path
+from rest_framework.authtoken.views import obtain_auth_token
 from .views import (
     LivroListCreateView,
     LivroUpdateView,
@@ -6,6 +7,7 @@ from .views import (
     RegistroEmprestimoListCreateView,
     RegistroEmprestimoUpdateView,
     RegistroEmprestimoDeleteView,
+    RegisterUserView
 )
 
 urlpatterns = [
@@ -18,4 +20,10 @@ urlpatterns = [
     path('emprestimos/', RegistroEmprestimoListCreateView.as_view(), name='emprestimo-list-create'),
     path('emprestimos/<int:pk>/', RegistroEmprestimoUpdateView.as_view(), name='emprestimo-update'),
     path('emprestimos/<int:pk>/delete/', RegistroEmprestimoDeleteView.as_view(), name='emprestimo-delete'),
+
+    # Url para obter token
+    path('token/', obtain_auth_token, name='api_token_auth'),
+
+     # URL para Registro de Usuário
+    path('usuarios/registrar/', RegisterUserView.as_view(), name='user-register'),
 ]

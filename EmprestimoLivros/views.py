@@ -1,18 +1,22 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import User, Livro, RegistroEmprestimo
+from .models import Livro, RegistroEmprestimo
+from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 from .serializers import (
-    UserSerializer,
     LivroSerializer,
     RegistroEmprestimoSerializer,
-    RegistroEmprestimoCreateSerializer
+    RegistroEmprestimoCreateSerializer,
+    RegisterUserSerializer
 )
 
 # Views para Livros
 class LivroListCreateView(generics.ListCreateAPIView):
     queryset = Livro.objects.all()
     serializer_class = LivroSerializer
+    permission_classes = [IsAuthenticated]
 
 class LivroUpdateView(generics.UpdateAPIView):
     queryset = Livro.objects.all()
@@ -28,6 +32,7 @@ class LivroUpdateView(generics.UpdateAPIView):
 class LivroListView(generics.ListAPIView):
     queryset = Livro.objects.all()
     serializer_class = LivroSerializer
+    permission_classes = [IsAuthenticated]
 
 
 
@@ -52,3 +57,21 @@ class RegistroEmprestimoUpdateView(generics.UpdateAPIView):
 
 class RegistroEmprestimoDeleteView(generics.DestroyAPIView):
     queryset = RegistroEmprestimo.objects.all()
+
+
+class RegisterUserView(APIView):
+    def post(self, request):
+        serializer = RegisterUserSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({
+                "user": {
+                    "username": user.username,
+                    "email": user.email,
+                    "department": user.department,
+                    "employee_id": user.employee_id,  # Retorna a matrícula gerada
+                },
+                "token": token.key
+            }, status=HTTP_201_CREATED)
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)

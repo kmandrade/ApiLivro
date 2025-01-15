@@ -11,8 +11,10 @@ class Base(models.Model):
         abstract = True
 
 # Modelo de Usuário (Funcionário)
-class User(AbstractUser, Base):
-    employee_id = models.CharField(max_length=20, unique=True, verbose_name="ID do Funcionário")
+class User(AbstractUser):
+    employee_id = models.CharField(
+        max_length=20, unique=True, verbose_name="ID do Funcionário", blank=True
+    )
     department = models.CharField(max_length=50, verbose_name="Departamento")
 
     class Meta:
@@ -21,6 +23,13 @@ class User(AbstractUser, Base):
 
     def __str__(self):
         return self.username
+
+    def save(self, *args, **kwargs):
+        # Gera automaticamente o employee_id no formato EMP001 se ainda não existir
+        if not self.employee_id:
+            total_users = User.objects.count() + 1 
+            self.employee_id = f"EMP{str(total_users).zfill(3)}" 
+        super().save(*args, **kwargs)
 
 # Modelo de Livro
 class Livro(Base):
