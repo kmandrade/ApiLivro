@@ -4,6 +4,91 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+class LivroSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Livro
+        fields = ['id', 'nome', 'autor', 'resumo', 'isbn', 'disponivel', 'ativo', 'criacao', 'atualizacao']
+        read_only_fields = ['id', 'criacao', 'atualizacao']
+
+    def validate_isbn(self, value):
+        livro_com_isbn = Livro.objects.filter(isbn=value).exclude(id=self.instance.id if self.instance else None)
+
+        if livro_com_isbn.exists():
+            raise serializers.ValidationError("Já existe um livro com este ISBN.")
+        
+        return value
+
+    def validate(self, data):
+        if self.instance and data.get('ativo') and self.instance.ativo:
+            raise serializers.ValidationError({"ativo": "O livro já está ativo."})
+
+        return data
+
+class LivroDeleteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Livro
+        fields = ['id', 'ativo', 'disponivel']
+
+    def validate(self, data):
+        if not self.instance.ativo:
+            raise serializers.ValidationError({"detail": "O livro já está inativo."})
+
+        return data
+
+    def update(self, instance, validated_data):
+        instance.ativo = False
+        instance.disponivel = False
+        instance.save()
+        return instance
+
+class RegistroEmprestimoSerializer(serializers.ModelSerializer):
+    usuario = serializers.StringRelatedField(read_only=True)
+    livro = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = RegistroEmprestimo
+        extra_kwargs = {
+            'id': {'read_only': True},
+            'solicitante': {'required': False}, 
+        }
+        fields = [
+            'id', 'usuario', 'solicitante', 'livro', 'data_emprestimo',
+            'data_devolucao', 'devolvido', 'criacao', 'atualizacao', 'ativo'
+        ]
+        read_only_fields = ['id', 'data_emprestimo', 'criacao', 'atualizacao']
+
+    def validate(self, data):
+        if self.context['request'].method in ['PUT', 'PATCH']:
+            data.pop('solicitante', None) 
+        return data
+
+
+class RegistroEmprestimoCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RegistroEmprestimo
+        fields = ['usuario', 'solicitante', 'livro', 'data_devolucao', 'devolvido']
+        extra_kwargs = {'solicitante': {'required': False}}
+
+    def validate_livro(self, value):
+        try:
+            livro = Livro.objects.get(pk=value.id)
+        except Livro.DoesNotExist:
+            raise serializers.ValidationError("Este livro não existe.")
+
+        if not livro.ativo:
+            raise serializers.ValidationError("Este livro não está ativo.")
+
+        if not livro.disponivel:
+            raise serializers.ValidationError("Este livro não está disponível para empréstimo.")
+        return value
+
+    def create(self, validated_data):
+        livro = validated_data['livro']
+        livro.disponivel = False
+        livro.save()
+        return super().create(validated_data)
+
+
 # (Funcionário)
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -16,54 +101,6 @@ class UserSerializer(serializers.ModelSerializer):
             'criacao', 'atualizacao', 'ativo'
         ]
         read_only_fields = ['id', 'criacao', 'atualizacao']
-
-class LivroSerializer(serializers.ModelSerializer):
-    class Meta:
-        extra_kwargs = {
-            'id': {'read_only': True},
-        }
-        model = Livro
-        fields = ['id', 'nome', 'autor', 'isbn', 'resumo', 'disponivel', 'criacao', 'atualizacao']
-        read_only_fields = ['id', 'criacao', 'atualizacao']
-
-class RegistroEmprestimoSerializer(serializers.ModelSerializer):
-    usuario = serializers.StringRelatedField(read_only=True)
-    livro = serializers.StringRelatedField(read_only=True) 
-
-    class Meta:
-        model = RegistroEmprestimo
-        extra_kwargs = {
-            'id': {'read_only': True},
-        }
-        fields = [
-            'id', 'usuario', 'solicitante', 'livro', 'data_emprestimo',
-            'data_devolucao', 'devolvido', 'criacao', 'atualizacao', 'ativo'
-        ]
-        read_only_fields = ['id', 'data_emprestimo', 'criacao', 'atualizacao']
-
-class RegistroEmprestimoCreateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RegistroEmprestimo
-        extra_kwargs = {
-            'id': {'read_only': True},
-        }
-        fields = ['usuario', 'solicitante', 'livro', 'data_devolucao', 'devolvido']
-
-    def validate(self, data):
-        # Valida se o livro está disponível para empréstimo
-        livro = data.get('livro')
-        if livro and not livro.disponivel:
-            raise serializers.ValidationError({'livro': 'Este livro não está disponível para empréstimo.'})
-
-        return data
-
-    def create(self, validated_data):
-        # Marca o livro como indisponível após a criação do registro de empréstimo
-        livro = validated_data['livro']
-        livro.disponivel = False
-        livro.save()
-
-        return super().create(validated_data)
 
 
 class RegisterUserSerializer(serializers.ModelSerializer):

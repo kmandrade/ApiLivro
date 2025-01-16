@@ -14,4 +14,9 @@ Atualize o banco de dados com o comando: python manage.py migrate
 
 Rode o projeto com o comando: python manage.py runserver
 
+Anexado à pasta raiz do projeto, contém uma collection (EmpresitmoLivros.postman) .json para ser importada, onde contém as rotas 
+para criação de usuário e realização de requests que atenderão ao desafio.
+
+Para autenticar é necessário criar o usuario, gerar o token e no header adicionar a chave Authorization com valor Token {token}
+
 Tudo pronto! Basta utilizar a aplicação.
