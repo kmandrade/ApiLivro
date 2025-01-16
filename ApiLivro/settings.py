@@ -60,7 +60,7 @@ DATABASES = {
         'NAME': 'EmprestimoLivros',
         'USER': 'postgres',
         'PASSWORD': 'postgres',
-        'HOST': '127.0.0.1',
+        #'HOST': 'host.docker.internal',
         'PORT': '5432',
     }
 }

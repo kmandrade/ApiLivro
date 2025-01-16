@@ -19,4 +19,14 @@ para criação de usuário e realização de requests que atenderão ao desafio.
 
 Para autenticar é necessário criar o usuario, gerar o token e no header adicionar a chave Authorization com valor Token {token}
 
+Para executar o projeto com docker:
+ - Rodar o servidor local host do PostgreSQL;
+ - Criar a imagem no Docker com comando: docker build -t api-livro .
+ - Criar o contênier com o comando: docker run -p 8000:8000 api-livro
+
+Para executar o projeto sem o docker:
+ - Rodar o servidor local host do PostgreSQL;
+ - Comentar no settings.py a linha que contém -> 'HOST': 'host.docker.internal'
+ - Rodar o comando -> python manage.py run server
+
 Tudo pronto! Basta utilizar a aplicação.
